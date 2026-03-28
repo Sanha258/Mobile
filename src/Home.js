@@ -1,11 +1,12 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, Image, StyleSheet, Pressable, Alert } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, Image, StyleSheet, Pressable, Alert, Modal, TextInput } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import * as Clipboard from 'expo-clipboard';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 function makePassword(length = 12) {
-  const chars = '1234567890987654321';
+  // Caracteres mais fortes: letras maiúsculas, minúsculas, números e símbolos
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()_+';
   let pw = '';
   for (let i = 0; i < length; i++) {
     pw += chars.charAt(Math.floor(Math.random() * chars.length));
@@ -15,15 +16,19 @@ function makePassword(length = 12) {
 
 export default function Home({ navigation }) {
   const [password, setPassword] = useState('');
-  useEffect(() => {
-    console.log('Home mounted');
-  }, []);
+  const [modalVisible, setModalVisible] = useState(false);
+  const [appName, setAppName] = useState('');
 
-  const savePassword = async (pw) => {
+  const savePassword = async (pw, name) => {
     try {
       const existing = await AsyncStorage.getItem('history');
       const arr = existing ? JSON.parse(existing) : [];
-      arr.unshift(pw); 
+      const newEntry = {
+        password: pw,
+        appName: name,
+        timestamp: Date.now(),
+      };
+      arr.unshift(newEntry);
       await AsyncStorage.setItem('history', JSON.stringify(arr));
     } catch (e) {
       console.warn('could not save password', e);
@@ -33,7 +38,6 @@ export default function Home({ navigation }) {
   const handleGenerate = () => {
     const pw = makePassword();
     setPassword(pw);
-    savePassword(pw);
   };
 
   const handleCopy = () => {
@@ -41,6 +45,25 @@ export default function Home({ navigation }) {
       Clipboard.setStringAsync(password);
       Alert.alert('Copiado', 'Senha copiada para a área de transferência');
     }
+  };
+
+  const handleSave = () => {
+    if (password) {
+      setModalVisible(true);
+      setAppName('');
+    } else {
+      Alert.alert('Atenção', 'Gere uma senha primeiro');
+    }
+  };
+
+  const handleCreate = () => {
+    if (appName.trim() === '') {
+      Alert.alert('Atenção', 'Informe o nome do aplicativo');
+      return;
+    }
+    savePassword(password, appName);
+    setModalVisible(false);
+    Alert.alert('Salvo', 'Senha salva com sucesso!');
   };
 
   return (
@@ -60,14 +83,52 @@ export default function Home({ navigation }) {
         <Pressable style={[styles.button, styles.copyButton]} onPress={handleCopy}>
           <Text style={styles.buttonText}>COPIAR</Text>
         </Pressable>
+
+        <Pressable style={[styles.button, styles.saveButton]} onPress={handleSave}>
+          <Text style={styles.buttonText}>SALVAR</Text>
+        </Pressable>
       </View>
 
-      <Pressable onPress={() => {
-          console.log('nav to history');
-          navigation.navigate('History');
-        }}>
+      <Pressable onPress={() => navigation.navigate('History')}>
         <Text style={styles.linkText}>Ver Senhas</Text>
       </Pressable>
+
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={modalVisible}
+        onRequestClose={() => setModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContainer}>
+            <Text style={styles.modalTitle}>Salvar Senha</Text>
+            <TextInput
+              style={[styles.input, styles.disabledInput]}
+              value={password}
+              editable={false}
+              placeholder="Senha gerada"
+            />
+            <TextInput
+              style={styles.input}
+              placeholder="Nome do aplicativo (ex: Facebook)"
+              value={appName}
+              onChangeText={setAppName}
+            />
+            <View style={styles.modalButtons}>
+              <Pressable style={styles.modalButtonCancel} onPress={() => setModalVisible(false)}>
+                <Text style={styles.modalButtonText}>Cancelar</Text>
+              </Pressable>
+              <Pressable
+                style={[styles.modalButtonCreate, appName.trim() === '' && styles.buttonDisabled]}
+                onPress={handleCreate}
+                disabled={appName.trim() === ''}
+              >
+                <Text style={styles.modalButtonText}>Criar</Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
 
       <StatusBar style="auto" />
     </View>
@@ -101,7 +162,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#4DB5FF',
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 10,   
+    marginBottom: 10,
     padding: 10,
     borderRadius: 6,
   },
@@ -114,7 +175,7 @@ const styles = StyleSheet.create({
   buttonGroup: {
     width: '100%',
     gap: 10,
-    marginBottom: 10, 
+    marginBottom: 10,
   },
   button: {
     paddingVertical: 14,
@@ -127,6 +188,9 @@ const styles = StyleSheet.create({
   copyButton: {
     backgroundColor: '#1976D2',
   },
+  saveButton: {
+    backgroundColor: '#4CAF50',
+  },
   buttonText: {
     color: '#fff',
     fontSize: 18,
@@ -137,5 +201,70 @@ const styles = StyleSheet.create({
     fontSize: 14,
     marginTop: 10,
     textDecorationLine: 'underline',
+  },
+  modalOverlay: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0,0,0,0.5)',
+  },
+  modalContainer: {
+    width: '80%',
+    backgroundColor: 'white',
+    borderRadius: 10,
+    padding: 20,
+    alignItems: 'center',
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    marginBottom: 20,
+    color: '#0057D9',
+  },
+  input: {
+    width: '100%',
+    borderWidth: 1,
+    borderColor: '#ccc',
+    borderRadius: 8,
+    padding: 10,
+    marginBottom: 15,
+    fontSize: 16,
+    backgroundColor: '#f0f0f0',
+  },
+  disabledInput: {
+    backgroundColor: '#e0e0e0',
+    color: '#333',
+  },
+  modalButtons: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    width: '100%',
+    marginTop: 10,
+  },
+  modalButtonCancel: {
+    backgroundColor: '#f44336',
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 5,
+    flex: 1,
+    marginRight: 10,
+    alignItems: 'center',
+  },
+  modalButtonCreate: {
+    backgroundColor: '#4CAF50',
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 5,
+    flex: 1,
+    marginLeft: 10,
+    alignItems: 'center',
+  },
+  modalButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  buttonDisabled: {
+    backgroundColor: '#a0a0a0',
   },
 });
