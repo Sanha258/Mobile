@@ -14,7 +14,7 @@ export default function App() {
         <Stack.Screen name="SignIn" component={SignIn} options={{ title: 'SignIn' }} />
         <Stack.Screen name="SignUp" component={SignUp} options={{ title: 'SingnUp' }} />
         <Stack.Screen name="Home" component={Home} options={{ title: 'Home' }} />
-        <Stack.Screen name="History" component={History} options={{ title: 'Histórico de senhas' }} />
+        <Stack.Screen name="History" component={History} options={{ title: 'Históricos de senhas' }} />
       </Stack.Navigator>
     </NavigationContainer>
   );

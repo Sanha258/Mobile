@@ -101,7 +101,7 @@ export default function Home({ navigation }) {
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContainer}>
-            <Text style={styles.modalTitle}>Salvar Senha</Text>
+            <Text style={styles.modalTitle}>Cadastro de Senhas</Text>
             <TextInput
               style={[styles.input, styles.disabledInput]}
               value={password}
@@ -265,6 +265,6 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   buttonDisabled: {
-    backgroundColor: '#a0a0a0',
+    backgroundColor: '#4CAF50',
   },
 });
