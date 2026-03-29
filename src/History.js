@@ -12,7 +12,6 @@ export default function History({ navigation }) {
       const existing = await AsyncStorage.getItem('history');
       let arr = existing ? JSON.parse(existing) : [];
 
-      // Migração: se for string (formato antigo), transforma em objeto
       arr = arr.map(item => {
         if (typeof item === 'string') {
           return { password: item, appName: 'Sem nome', timestamp: Date.now() };

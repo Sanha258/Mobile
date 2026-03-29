@@ -1,24 +1,62 @@
+
 import React, { useState } from 'react';
 import { View, Text, TextInput, Pressable, StyleSheet, Alert } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import CustomAlert from './components/CustomAlert';
 
 export default function SignUp({ navigation }) {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [alertVisible, setAlertVisible] = useState(false);
+  const [alertMessage, setAlertMessage] = useState('');
+
+  const showAlert = (message) => {
+    setAlertMessage(message);
+    setAlertVisible(true);
+  };
 
   const isFormValid = name.trim() !== '' && email.trim() !== '' && password.trim() !== '' && confirmPassword.trim() !== '' && password === confirmPassword;
 
-  const handleRegister = () => {
-    if (isFormValid) {
-      navigation.navigate('SignIn', { email });
-    } else {
+  const handleRegister = async () => {
+    if (!isFormValid) {
       Alert.alert('Atenção', 'Preencha todos os campos corretamente e verifique se as senhas coincidem.');
+      return;
+    }
+
+    try {
+      
+      const usersJson = await AsyncStorage.getItem('users');
+      const users = usersJson ? JSON.parse(usersJson) : [];
+
+      if (users.some(user => user.email === email)) {
+        Alert.alert('Erro', 'Este e-mail já está cadastrado.');
+        return;
+      }
+
+      const newUser = { name, email, password };
+      users.push(newUser);
+      await AsyncStorage.setItem('users', JSON.stringify(users));
+
+      showAlert('Cadastro realizado com sucesso!');
+
+      setTimeout(() => {
+        navigation.navigate('SignIn', { email });
+      }, 1500);
+    } catch (error) {
+      console.warn('Erro ao salvar usuário', error);
+      Alert.alert('Erro', 'Não foi possível realizar o cadastro.');
     }
   };
 
   return (
     <View style={styles.container}>
+      <CustomAlert
+        visible={alertVisible}
+        message={alertMessage}
+        onHide={() => setAlertVisible(false)}
+      />
       <Text style={styles.title}>SIGN UP</Text>
       <View style={styles.inputContainer}>
         <TextInput

@@ -5,7 +5,6 @@ import * as Clipboard from 'expo-clipboard';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 function makePassword(length = 12) {
-  // Caracteres mais fortes: letras maiúsculas, minúsculas, números e símbolos
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()_+';
   let pw = '';
   for (let i = 0; i < length; i++) {

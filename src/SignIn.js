@@ -1,10 +1,13 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, Pressable, StyleSheet, Alert } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import CustomAlert from './components/CustomAlert';
 
 export default function SignIn({ navigation, route }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-
+  const [alertVisible, setAlertVisible] = useState(false);
+  const [alertMessage, setAlertMessage] = useState('');
 
   React.useEffect(() => {
     if (route.params?.email) {
@@ -12,18 +15,45 @@ export default function SignIn({ navigation, route }) {
     }
   }, [route.params?.email]);
 
+  const showAlert = (message) => {
+    setAlertMessage(message);
+    setAlertVisible(true);
+  };
+
   const isFormValid = email.trim() !== '' && password.trim() !== '';
 
-  const handleLogin = () => {
-    if (isFormValid) {
-      navigation.replace('Home'); 
-    } else {
+  const handleLogin = async () => {
+    if (!isFormValid) {
       Alert.alert('Atenção', 'Preencha todos os campos');
+      return;
+    }
+
+    try {
+      const usersJson = await AsyncStorage.getItem('users');
+      const users = usersJson ? JSON.parse(usersJson) : [];
+
+      const user = users.find(u => u.email === email && u.password === password);
+      if (user) {
+        showAlert('SignIn realizado com sucesso!');
+        setTimeout(() => {
+          navigation.replace('Home');
+        }, 1500);
+      } else {
+        Alert.alert('Erro', 'E-mail ou senha inválidos.');
+      }
+    } catch (error) {
+      console.warn('Erro ao buscar usuários', error);
+      Alert.alert('Erro', 'Não foi possível realizar o login.');
     }
   };
 
   return (
     <View style={styles.container}>
+      <CustomAlert
+        visible={alertVisible}
+        message={alertMessage}
+        onHide={() => setAlertVisible(false)}
+      />
       <Text style={styles.title}>SIGN IN</Text>
       <View style={styles.inputContainer}>
         <TextInput
@@ -108,7 +138,7 @@ const styles = StyleSheet.create({
   },
   signupText: {
     fontSize: 14,
-    color: '#333',
+    color: '#333333',
   },
   signupLinkText: {
     fontSize: 14,
